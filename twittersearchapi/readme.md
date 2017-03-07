@@ -1,22 +1,28 @@
-# POC FHIR
+# Twitter Search API
 
-This is a POC to connect FitBit and 23andMe api.
+This is a POC to search tweets using MuleSoft Twitter connector.
 
-## FitBit API 
-This API returns heart rate time series data by calling a Fitbit endpoint.
-The Fitbit endpoint is OAuth2 secured. The access token is currently hard-coded as mule community edition 
-does not provide oauth2 module. The token expires after some interval may result in 'Response code 401
-unauthorized' error
+## Prject Set Up
 
-## Testing FitBit API
-The cloud url for testing - http://pocfhir.cloudhub.io/api/fitbit
+### Step 1: Download the TwitterSearchAPI from github
 
-## 23andMe API
-This API returns genotype data by calling a 23andMe endpoint
+1. Link to download <a href="https://github.com/indiramallick1988/TwitterSearchAPI"> https://github.com/indiramallick1988/TwitterSearchAPI.
+2. Go to "Clone or Download" -> "Download ZIP" as shown below
+ 
+   ![ScreenShot](https://raw.githubusercontent.com/indiramallick1988/Demo2/master/twitter/download.PNG)
+   
+### Step 2: Import Mule Project
 
-## Testing 23andMe API
-The cloud url for testing - http://pocfhir.cloudhub.io/console/
+1. Open Anypointstudio, navigate to File-> Import Project-> Anypoint Studio generated Archive(.zip)
+
+    ![ScreenShot](https://raw.githubusercontent.com/indiramallick1988/Demo2/master/twitter/Import1.PNG) 
+
+
+
+## Application Config
 
 ## Deployment
 
-The API is deployed in mulesoft anypoint cloud platform. 
+## Testing Twitter Search API
+
+## Known Issues
