@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:quartz="http://www.mulesoft.org/schema/mule/quartz" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:twitter="http://www.mulesoft.org/schema/mule/twitter" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/twitter http://www.mulesoft.org/schema/mule/twitter/current/mule-twitter.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/quartz http://www.mulesoft.org/schema/mule/quartz/current/mule-quartz.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    
+    <context:property-placeholder location="application.properties"/>
+    <spring:beans>
+        <spring:bean id="maxIdStore" class="org.mule.util.store.InMemoryObjectStore"/>
+    </spring:beans>
+    <twitter:config name="Twitter__Configuration" accessKey="${accessKey}" accessSecret="${accessSecret}" consumerKey="${consumerKey}" consumerSecret="${consumerSecret}" doc:name="Twitter: Configuration"/>
+    <flow name="main-flow-twitter-search-api" processingStrategy="synchronous">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="${pollFrequency}"/>
+            <watermark variable="max_id" default-expression="0" update-expression="#[payload.maxId]" object-store-ref="maxIdStore"/>
+            <flow-ref name="set-twitter-search-param" doc:name="poll twitter "/>
+        </poll>
+        <logger message="#[message.id] - Response from twitter api - #[payload.tweets]" level="INFO" doc:name="log twitter response"/>
+        <enricher target="#[flowVars.me]" doc:name="Message Enricher">
+            <flow-ref name="write-twitter-response-to-file" doc:name="write-twitter-response-to-file"/>
+        </enricher>
+    </flow>
+    <sub-flow name="set-twitter-search-param">
+        <expression-component doc:name="set twitter search query"><![CDATA[flowVars.searchQuery = "";
+flowVars.keyword = "${searchKeyword}";
+flowVars.handle = "${searchHandle}";
+
+if(org.mule.util.StringUtils.isNotEmpty(flowVars.keyword)){
+flowVars.searchQuery = flowVars.keyword;
+}
+
+if(org.mule.util.StringUtils.isNotEmpty(flowVars.handle)){
+flowVars.searchQuery = flowVars.searchQuery + " from:" + flowVars.handle;
+}
+
+]]></expression-component>
+        <logger message="#[message.id] - Calling Twitter Search with query - #[flowVars.searchQuery], maxId - #[flowVars.max_id]" level="INFO" doc:name="log search query and maxId for twitter"/>
+        <twitter:search config-ref="Twitter__Configuration" query="#[flowVars.searchQuery]" sinceId="#[flowVars.max_id]" doc:name="Twitter"/>
+    </sub-flow>
+    <sub-flow name="write-twitter-response-to-file">
+        <expression-filter expression="#[payload.tweets != []]" doc:name="create file if response has tweets"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <file:outbound-endpoint path="${fileOutputDirectory}" outputPattern="${fileOutputPattern}" responseTimeout="10000" doc:name="File"/>
+    </sub-flow>
+</mule>
